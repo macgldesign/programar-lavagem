@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Atraso da Lavagem</title>
+
+  <!-- PWA Manifest & Service Worker -->
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('Service Worker registrado:', reg.scope))
+          .catch(err => console.error('Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter para UI geral, Roboto Mono para hora atual e Roboto Condensed para timeline -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #eef2f7 0%, #e0e8f5 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #1e293b;
+    }
+    
+    .font-roboto-mono {
+      font-family: 'Roboto Mono', monospace;
+    }
+
+    .font-roboto-condensed {
+      font-family: 'Roboto Condensed', sans-serif;
+    }
+
+    /* Glassmorphism Card Style */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 10px 30px rgba(30, 41, 59, 0.08);
+    }
+
+    .btn-ios {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-ios:hover {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-ios:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.2);
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+
+  <script>
+    // Salva as configurações locais
+    window.saveData = function() {
+      const duracaoHoras = document.getElementById("duracaoHoras").value;
+      const duracaoMinutos = document.getElementById("duracaoMinutos").value;
+      const horaTerminoDesejado = document.getElementById("horaTerminoDesejado").value;
+
+      localStorage.setItem("wash_duracaoHoras", duracaoHoras || "");
+      localStorage.setItem("wash_duracaoMinutos", duracaoMinutos || "");
+      localStorage.setItem("wash_horaTerminoDesejado", horaTerminoDesejado || "");
+    };
+
+    // Carrega as configurações salvas
+    window.loadData = function() {
+      const h = localStorage.getItem("wash_duracaoHoras");
+      const m = localStorage.getItem("wash_duracaoMinutos");
+      const t = localStorage.getItem("wash_horaTerminoDesejado");
+
+      if (h !== null) document.getElementById("duracaoHoras").value = h;
+      if (m !== null) document.getElementById("duracaoMinutos").value = m;
+      if (t !== null) document.getElementById("horaTerminoDesejado").value = t;
+    };
+  </script>
+</head>
+<body class="p-3 sm:p-6">
+  <div id="app-container" class="w-full max-w-md mx-auto glass-card rounded-3xl p-5 sm:p-6 transition-all duration-300">
+    
+    <!-- Cabeçalho -->
+    <div class="text-center mb-4">
+      <h1 class="text-xl font-extrabold text-slate-800 tracking-tight flex items-center justify-center gap-2">
+        <span>🧺</span> Atraso da Lavagem
+      </h1>
+      
+      <!-- Box do Relógio Digital com Roboto Mono -->
+      <div class="mt-3 bg-white/80 rounded-2xl p-3 border border-slate-200/80 shadow-sm inline-block w-full max-w-xs">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">Hora atual</span>
+        <div id="horaAtualVal" class="text-4xl font-bold text-blue-900 font-roboto-mono leading-none tracking-tight">
+          --:--
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="space-y-4">
+      <div>
+        <label for="duracaoHoras" class="block text-sm font-bold text-slate-700 mb-1.5">
+          1. Duração total da lavagem:
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="relative">
+            <input type="number" id="duracaoHoras" placeholder="0" min="0" 
+              class="w-full text-lg font-bold p-3.5 pr-8 bg-white/90 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" 
+              oninput="window.saveData()">
+            <span class="absolute right-3 top-4 text-xs font-semibold text-slate-400 pointer-events-none">h</span>
+          </div>
+          <div class="relative">
+            <input type="number" id="duracaoMinutos" placeholder="0" min="0" max="59" 
+              class="w-full text-lg font-bold p-3.5 pr-10 bg-white/90 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" 
+              oninput="window.saveData()">
+            <span class="absolute right-3 top-4 text-xs font-semibold text-slate-400 pointer-events-none">min</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1 pl-1">Ex: 1h e 32 minutos.</p>
+      </div>
+
+      <div>
+        <label for="horaTerminoDesejado" class="block text-sm font-bold text-slate-700 mb-1.5">
+          2. Horário desejado para término:
+        </label>
+        <div class="relative">
+          <input type="time" id="horaTerminoDesejado" 
+            class="w-full text-lg font-bold p-3.5 bg-white/90 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all text-slate-800" 
+            onchange="window.saveData()">
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button onclick="calcular()" class="btn-ios w-full py-4 text-white font-extrabold text-base rounded-2xl shadow-md uppercase tracking-wider">
+          CALCULAR ATRASO
+        </button>
+      </div>
+    </div>
+
+    <!-- Seção de Resultado (Linha do Tempo) -->
+    <div id="resultado" class="mt-5 pt-4 border-t border-slate-200/80">
+      <h2 class="text-sm font-extrabold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+        <span class="text-blue-600">✨</span> Linha do Tempo da Lavagem
+      </h2>
+
+      <div id="resultadoContent" class="bg-white/90 rounded-2xl p-5 border border-slate-200 shadow-sm text-slate-800">
+        <p class="text-sm font-medium text-center text-slate-400 py-2">
+          Preencha os horários e clique em <strong class="text-slate-600">CALCULAR ATRASO</strong>.
+        </p>
+      </div>
+    </div>
+    
+    <!-- Rodapé Ultra Discreto -->
+    <div class="mt-0.5 mb-0 pb-0 text-center leading-none">
+      <span class="text-[9px] font-normal text-slate-400/60 tracking-widest lowercase">by macgldesign</span>
+    </div>
+
+  </div>
+
+  <script>
+    // Atualiza o relógio em tempo real
+    function atualizarHoraAtual() {
+      const agora = new Date();
+      const hora = agora.getHours().toString().padStart(2, '0');
+      const minuto = agora.getMinutes().toString().padStart(2, '0');
+      
+      const el = document.getElementById('horaAtualVal');
+      if (el) {
+        el.textContent = `${hora}:${minuto}`;
+      }
+    }
+
+    setInterval(atualizarHoraAtual, 1000);
+    atualizarHoraAtual();
+
+    // Formata a hora em HH:MM
+    function formatarHora(data) {
+      return data.getHours().toString().padStart(2, '0') + ":" +
+             data.getMinutes().toString().padStart(2, '0');
+    }
+
+    // Função Principal de Cálculo acionada SOMENTE no clique do botão
+    window.calcular = function() {
+      const agora = new Date();
+
+      const duracaoHoras = parseInt(document.getElementById("duracaoHoras").value || "0");
+      const duracaoMinutos = parseInt(document.getElementById("duracaoMinutos").value || "0");
+
+      const duracaoTotalMin = duracaoHoras * 60 + duracaoMinutos;
+      const horaTerminoDesejado = document.getElementById("horaTerminoDesejado").value;
+      const containerResultado = document.getElementById("resultadoContent");
+      
+      if (duracaoTotalMin <= 0) {
+        containerResultado.innerHTML = `
+          <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-center text-red-600 text-sm font-bold">
+            ⚠️ A duração da lavagem deve ser maior que zero.
+          </div>`;
+        return;
+      }
+
+      if (!horaTerminoDesejado) {
+        containerResultado.innerHTML = `
+          <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-center text-red-600 text-sm font-bold">
+            ⚠️ Por favor, informe o horário de término desejado.
+          </div>`;
+        return;
+      }
+      
+      const [horaDesejada, minutoDesejado] = horaTerminoDesejado.split(":").map(Number);
+      
+      const termino = new Date(agora);
+      termino.setHours(horaDesejada, minutoDesejado, 0, 0);
+
+      if (termino < agora) {
+        termino.setDate(termino.getDate() + 1);
+      }
+      
+      const inicioIdeal = new Date(termino.getTime() - duracaoTotalMin * 60000);
+      const atrasoIdealMin = Math.round((inicioIdeal - agora) / 60000);
+      
+      // Se perdeu o tempo
+      if (atrasoIdealMin < 0) {
+        const tempoPerdidoMin = Math.abs(atrasoIdealMin);
+        const tempoPerdidoHoras = Math.floor(tempoPerdidoMin / 60);
+        const tempoPerdidoMinutos = tempoPerdidoMin % 60;
+        const terminoImediato = new Date(agora.getTime() + duracaoTotalMin * 60000);
+
+        containerResultado.innerHTML = `
+          <div class="space-y-3">
+            <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-center">
+              <p class="font-extrabold text-red-600 text-base">❌ Perdeu o tempo ideal!</p>
+              <p class="text-xs text-red-700 mt-1">
+                Para terminar às <strong>${horaTerminoDesejado}</strong>, você deveria ter começado há 
+                <strong>${tempoPerdidoHoras}h ${tempoPerdidoMinutos}min</strong>.
+              </p>
+            </div>
+            <p class="text-xs text-slate-500 text-center">
+              Se ligar a máquina agora, ela terminará às <strong class="font-roboto-condensed text-sm">${formatarHora(terminoImediato)}</strong>.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      // Cálculo do Atraso Arredondado
+      let atrasoInteiroMaisProximo = Math.round(atrasoIdealMin / 60);
+      const errorInMinutes = (atrasoInteiroMaisProximo * 60) - atrasoIdealMin;
+      const MAX_LATENESS_MINUTES = 15;
+
+      if (errorInMinutes > MAX_LATENESS_MINUTES) {
+        atrasoInteiroMaisProximo = atrasoInteiroMaisProximo - 1;
+      }
+      
+      if (atrasoInteiroMaisProximo < 0) {
+        atrasoInteiroMaisProximo = 0;
+      }
+      
+      const horaCalculadaMomento = formatarHora(agora);
+      const inicioComAtrasoCheio = new Date(agora.getTime() + atrasoInteiroMaisProximo * 60 * 60000);
+      const fimComAtrasoCheio = new Date(inicioComAtrasoCheio.getTime() + duracaoTotalMin * 60000);
+
+      // Renderização da LINHA DO TEMPO DA LAVAGEM com Roboto Condensed nos horários
+      containerResultado.innerHTML = `
+        <div class="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-blue-200">
+          
+          <!-- Ponto 1: Agora -->
+          <div class="relative">
+            <div class="absolute -left-6 top-0.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white shadow-sm flex items-center justify-center"></div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl font-bold font-roboto-condensed text-blue-700 leading-none">${horaCalculadaMomento}</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">AGORA</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Momento da consulta</p>
+            </div>
+          </div>
+
+          <!-- Intervalo 1: Espera do Timer -->
+          <div class="my-2 py-2 px-3 bg-amber-50 border border-amber-200/80 rounded-xl flex items-center gap-2">
+            <span class="text-base">⏳</span>
+            <div>
+              <span class="text-xs font-semibold text-amber-800 block">ESPERA (TIMER DA MÁQUINA)</span>
+              <span class="text-sm font-extrabold text-amber-900">${atrasoInteiroMaisProximo} hora${atrasoInteiroMaisProximo !== 1 ? 's' : ''} de atraso</span>
+            </div>
+          </div>
+
+          <!-- Ponto 2: Início Previsto -->
+          <div class="relative">
+            <div class="absolute -left-6 top-0.5 w-5 h-5 rounded-full bg-indigo-500 border-4 border-white shadow-sm"></div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl font-bold font-roboto-condensed text-indigo-700 leading-none">${formatarHora(inicioComAtrasoCheio)}</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">INÍCIO PREVISTO</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">A máquina começará a lavar</p>
+            </div>
+          </div>
+
+          <!-- Intervalo 2: Ciclo de Lavagem -->
+          <div class="my-2 py-2 px-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center gap-2">
+            <span class="text-base">🧺</span>
+            <div>
+              <span class="text-xs font-semibold text-blue-800 block">CICLO DE LAVAGEM</span>
+              <span class="text-sm font-extrabold text-blue-900">${duracaoHoras}h ${duracaoMinutos}min</span>
+            </div>
+          </div>
+
+          <!-- Ponto 3: Término Previsto -->
+          <div class="relative">
+            <div class="absolute -left-6 top-0.5 w-5 h-5 rounded-full bg-emerald-500 border-4 border-white shadow-sm"></div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl font-bold font-roboto-condensed text-emerald-700 leading-none">${formatarHora(fimComAtrasoCheio)}</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">TÉRMINO PREVISTO</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Lavagem concluída com sucesso</p>
+            </div>
+          </div>
+
+        </div>
+
+        <p class="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-100 text-center leading-relaxed">
+          * O tempo de espera arredondado (${atrasoInteiroMaisProximo}h) garante término dentro da tolerância de até 15 minutos do horário desejado.
+        </p>
+      `;
+    }
+    
+    // Carrega dados salvos ao abrir
+    window.addEventListener('DOMContentLoaded', window.loadData);
+  </script>
+</body>
+</html>
