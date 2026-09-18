@@ -9,10 +9,9 @@
   <link rel="manifest" href="manifest.json">
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(reg => console.log('Service Worker registrado:', reg.scope))
-          .catch(err => console.error('Erro ao registrar Service Worker:', err));
+  navigator.serviceWorker.register('/service-worker.js').then(registration => {
+    // Força a verificação de nova versão no servidor
+    registration.update();
       });
     }
   </script>
