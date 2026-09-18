@@ -1,20 +1,20 @@
+const CACHE_NAME = 'programar-lavagem-v1'; // Altere a versão aqui a cada update
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open('lavagem-cache').then(cache => {
-      return cache.addAll([
-        './',
-        './index.html',
-        './manifest.json'
-      ]);
-    })
-  );
+  self.skipWaiting(); // Força o novo Service Worker a ativar imediatamente
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache); // Apaga os caches antigos
+          }
+        })
+      );
     })
   );
+  self.clients.claim();
 });
