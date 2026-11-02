@@ -866,7 +866,7 @@
       armarLembrete();
 
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("/service-worker.js").then(registro => {
+        navigator.serviceWorker.register("./service-worker.js").then(registro => {
           // Força a verificação de nova versão no servidor
           registro.update();
         });

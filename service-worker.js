@@ -1,34 +1,35 @@
-const CACHE_NAME = 'programar-lavagem-v3'; // Altere a versão aqui a cada update
+const CACHE_NAME = 'programar-lavagem-v4'; // Altere a versão aqui a cada update
+// Caminhos relativos ao local do service worker (funciona em subpastas, ex.: GitHub Pages)
 const ARQUIVOS_APP = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-maskable-512.png',
-  '/apple-touch-icon.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-512.png',
+  './apple-touch-icon.png'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ARQUIVOS_APP))
+    caches.open(CACHE_NAME).then(cache =>
+      // Um arquivo que falhe não impede a instalação do restante
+      Promise.all(ARQUIVOS_APP.map(arquivo => cache.add(arquivo).catch(() => null)))
+    )
   );
   self.skipWaiting(); // Força o novo Service Worker a ativar imediatamente
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
+    caches.keys().then(cacheNames =>
+      Promise.all(
         cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache); // Apaga os caches antigos
-          }
+          if (cache !== CACHE_NAME) return caches.delete(cache); // Apaga os caches antigos
         })
-      );
-    })
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
@@ -65,7 +66,7 @@ self.addEventListener('fetch', event => {
     }).catch(async () => {
       const emCache = await caches.match(request, { ignoreSearch: true });
       if (emCache) return emCache;
-      if (request.mode === 'navigate') return caches.match('/index.html');
+      if (request.mode === 'navigate') return caches.match('./index.html');
       return Response.error();
     })
   );
@@ -77,7 +78,7 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(janelas => {
       if (janelas.length) return janelas[0].focus();
-      return self.clients.openWindow('/');
+      return self.clients.openWindow(self.registration.scope);
     })
   );
 });
