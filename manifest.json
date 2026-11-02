@@ -1,6 +1,6 @@
 {
   "name": "Programar Lavagem",
-  "short_name": "Lavagem",
+  "short_name": "ProgramarLavagem",
   "description": "Calcule quantas horas de atraso programar na máquina de lavar para terminar no horário desejado.",
   "lang": "pt-BR",
   "start_url": "./",

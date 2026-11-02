@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Programar Lavagem</title>
   <meta name="description" content="Calcule quantas horas de atraso programar na máquina de lavar para terminar no horário desejado.">
 
@@ -92,6 +92,7 @@
     html, body {
       overscroll-behavior: none;
       background: var(--bg);
+      touch-action: pan-y;
     }
 
     body {
@@ -104,7 +105,7 @@
       align-items: center;
       color: var(--text);
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+      touch-action: pan-y;
       padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
     }
 
@@ -858,6 +859,18 @@
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") armarLembrete();
       });
+
+      // ---------- Bloqueio de zoom (pinça) ----------
+
+      // iOS Safari usa eventos gesture* para pinça
+      ["gesturestart", "gesturechange", "gestureend"].forEach(tipo => {
+        document.addEventListener(tipo, evento => evento.preventDefault(), { passive: false });
+      });
+
+      // Android/demais navegadores: ignora toques com mais de um dedo
+      document.addEventListener("touchmove", evento => {
+        if (evento.touches.length > 1) evento.preventDefault();
+      }, { passive: false });
 
       // ---------- Inicialização ----------
 
